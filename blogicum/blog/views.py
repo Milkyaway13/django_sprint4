@@ -75,6 +75,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
         if obj.author != self.request.user:
+            # Возвращаем None, если пользователь не является автором публикации
             return None
         return obj
 
