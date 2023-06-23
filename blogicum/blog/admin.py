@@ -6,6 +6,7 @@ from .models import Category, Post, Location
 admin.site.empty_value_display = 'Не задано'
 
 
+@admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = (
         'title',
@@ -32,6 +33,11 @@ class PostAdmin(admin.ModelAdmin):
     is_published.short_description = 'Опубликована'
 
 
-admin.site.register(Category)
-admin.site.register(Post, PostAdmin)
-admin.site.register(Location)
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    pass

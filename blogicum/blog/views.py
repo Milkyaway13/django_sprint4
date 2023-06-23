@@ -11,7 +11,7 @@ from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView)
 
 from blog.forms import PostForm, CommentForm
-from blog.models import Post, Category, User, Comment
+from blog.models import Post, User, Comment, Category
 
 
 class RegistrationView(LoginRequiredMixin, CreateView):
@@ -25,17 +25,17 @@ class RegistrationView(LoginRequiredMixin, CreateView):
 class UserProfileView(ListView):
     model = Post
     template_name = 'blog/profile.html'
-    context_object_name = 'posts'
     paginate_by = settings.POSTS_LIMIT
 
     def get_queryset(self):
-        profile = User.objects.get(username=self.kwargs['username'])
-        return profile.posts.order_by('-pub_date')
+        return super().get_queryset().filter(
+            author__username=self.kwargs['username']).annotate(
+            comment_count=Count('comments')).prefetch_related(
+            'comments').order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        profile = User.objects.get(username=self.kwargs['username'])
-        context['profile'] = profile
+        context['profile'] = User.objects.get(username=self.kwargs['username'])
         return context
 
 
@@ -75,7 +75,6 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
         if obj.author != self.request.user:
-            # Возвращаем None, если пользователь не является автором публикации
             return None
         return obj
 
@@ -168,14 +167,12 @@ class IndexView(ListView):
     paginate_by = settings.POSTS_LIMIT
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        queryset = queryset.filter(
+        return super().get_queryset().filter(
             is_published=True,
             category__is_published=True,
             pub_date__lte=timezone.make_aware(datetime.now()),
-        ).order_by('-pub_date')
-        queryset = queryset.annotate(comment_count=Count('comments'))
-        return queryset
+            ).order_by('-pub_date').annotate(
+            comment_count=Count('comments'))
 
 
 class PostDetailView(DetailView):
@@ -192,27 +189,22 @@ class PostDetailView(DetailView):
 class CategoryPostsView(ListView):
     model = Post
     template_name = 'blog/category.html'
-    context_object_name = 'post_list'
     paginate_by = settings.POSTS_LIMIT
 
     def get_queryset(self):
-        queryset = super().get_queryset()
         category_slug = self.kwargs['category_slug']
-        category = get_object_or_404(Category, slug=category_slug,
-                                     is_published=True)
-        queryset = queryset.filter(
+        category = get_object_or_404(
+            Category, slug=category_slug,
+            is_published=True)
+        return super().get_queryset().filter(
             category=category,
             is_published=True,
-            pub_date__lte=timezone.now())
-        queryset = queryset.prefetch_related('comments')
-        queryset = queryset.order_by('-pub_date')
-        return queryset
+            pub_date__lte=timezone.now()
+            ).prefetch_related('comments').order_by('-pub_date').annotate(
+            comment_count=Count('comments'))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        posts = context['post_list']
-        comment_counts = []
-        for post in posts:
-            comment_counts.append(post.comments.count())
-        context['comment_counts'] = comment_counts
+        context['category'] = Category.objects.get(
+            slug=self.kwargs['category_slug'])
         return context

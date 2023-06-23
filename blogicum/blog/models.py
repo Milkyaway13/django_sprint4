@@ -84,9 +84,13 @@ class Comment(models.Model):
     )
     pub_date = models.DateTimeField('Дата и время создания комментария',
                                     auto_now_add=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               related_name='comments')
 
     class Meta:
         verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
         ordering = ('pub_date',)
+
+    def __str__(self):
+        return self.title
