@@ -93,7 +93,8 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         obj = self.get_object()
         if obj is None:
             return redirect(
-                reverse("blog:post_detail", kwargs={"post_id": self.kwargs["post_id"]})
+                reverse("blog:post_detail",
+                        kwargs={"post_id": self.kwargs["post_id"]})
             )
         return super().dispatch(request, *args, **kwargs)
 
@@ -167,7 +168,8 @@ class CommentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return comment.author == self.request.user
 
     def get_success_url(self):
-        return reverse("blog:post_detail", kwargs={"post_id": self.kwargs["post_id"]})
+        return reverse("blog:post_detail",
+                       kwargs={"post_id": self.kwargs["post_id"]})
 
 
 class IndexView(ListView):
@@ -208,11 +210,13 @@ class CategoryPostsView(ListView):
 
     def get_queryset(self):
         category_slug = self.kwargs["category_slug"]
-        category = get_object_or_404(Category, slug=category_slug, is_published=True)
+        category = get_object_or_404(Category,
+                                     slug=category_slug, is_published=True)
         return (
             super()
             .get_queryset()
-            .filter(category=category, is_published=True, pub_date__lte=timezone.now())
+            .filter(category=category, is_published=True,
+                    pub_date__lte=timezone.now())
             .prefetch_related("comments")
             .order_by("-pub_date")
             .annotate(comment_count=Count("comments"))
@@ -220,5 +224,6 @@ class CategoryPostsView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["category"] = Category.objects.get(slug=self.kwargs["category_slug"])
+        context["category"] = Category.objects.get(
+            slug=self.kwargs["category_slug"])
         return context
